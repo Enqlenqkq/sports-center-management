@@ -1,62 +1,41 @@
-# 스포츠센터 회원 관리 프로그램 - 기술 연구 및 구현 보고서 (Research & Implementation Plan)
+# 데이터베이스 스키마 및 테이블 요구사항 분석 보고서
 
-본 문서는 `functional_specification.md`를 기반으로, 요구사항을 실제 Java 코드로 구현하기 위한 기술적 세부사항과 아키텍처, 데이터 흐름을 정의한 상세 보고서입니다. 향후 모든 코드 작성은 본 보고서의 기준을 철저히 따릅니다.
+본 문서는 `functional_specification.md`를 바탕으로 도출된 데이터베이스의 테이블 및 컬럼 구조를 분석한 문서입니다.
 
-## 1. 아키텍처 및 기술 스택
+## 1. 테이블 구성 요약
+기능 명세에 따르면 시스템은 크게 3가지 주요 객체(회원, 강좌, 수강 내역)를 다루고 있으며, 이를 각각의 독립된 테이블로 분리하여 관계형 데이터베이스(RDB) 모델을 구성해야 합니다.
+1.  **`members` (회원 테이블):** 회원의 기본 인적 사항을 저장합니다.
+2.  **`lessons` (강좌 테이블):** 스포츠센터에서 운영하는 강좌 정보를 저장합니다.
+3.  **`enrollments` (수강 내역 테이블):** 회원과 강좌 사이의 다대다(N:M) 관계를 해소하고 각 회원의 수강 이력을 추적하는 매핑 테이블입니다.
 
-- **언어:** Java 25
-- **UI 프레임워크:** Swing
-- **데이터베이스:** MariaDB (Docker 환경)
-- **데이터 접근 API:** JDBC
-- **설계 패턴:** 엄격한 MVC (Model-View-Controller) 패턴, DAO (Data Access Object), DTO (Data Transfer Object) 패턴
+## 2. 세부 컬럼 및 제약 조건 분석
 
-## 2. 핵심 구현 원칙 (User Rules 적용)
+### 2.1. `members` (회원 테이블)
+*   `id` (INT, PK, AUTO_INCREMENT): 회원 고유 번호
+*   `name` (VARCHAR(50), NOT NULL): 회원의 이름 (필수 입력값)
+*   `phone` (VARCHAR(20), NOT NULL): 회원 연락처 (필수 입력값)
+*   `gender` (VARCHAR(10)): 성별 (선택 사항)
+*   `birth_date` (DATE): 생년월일
+*   `created_at` (TIMESTAMP): 가입일. 회원 등록 시점에 서버 시간을 기준으로 자동 설정되도록 `DEFAULT CURRENT_TIMESTAMP` 속성을 적용합니다.
+*   `notes` (TEXT): 기타 특이사항 (내용이 길어질 수 있으므로 VARCHAR 대신 TEXT 사용)
 
-1. **MVC 분리:** View 계층(`JFrame`, `JPanel`, `JDialog` 등)에는 절대 DB 통신 로직이 들어가지 않아야 합니다. DB 접근은 오직 DAO 클래스에서만 수행하며, Controller가 이 둘을 중재합니다.
-2. **자원 관리:** `Connection`, `PreparedStatement`, `ResultSet` 등 DB 관련 리소스는 반드시 `try-with-resources` 구문을 사용하여 메모리 누수와 커넥션 고갈을 방지합니다.
-3. **네이밍 컨벤션:** 
-   - 변수 및 메서드: `camelCase`
-   - 클래스: `PascalCase`
-   - DB 테이블 및 컬럼: 복수형 및 `snake_case`
+### 2.2. `lessons` (강좌 테이블)
+*   `id` (INT, PK, AUTO_INCREMENT): 강좌 고유 번호
+*   `name` (VARCHAR(100), NOT NULL): 강좌 이름
+*   `day_of_week` (VARCHAR(20)): 강좌 운영 요일 정보
+*   `time` (VARCHAR(50)): 강좌 진행 시간 정보
+*   `instructor_name` (VARCHAR(50)): 강사 이름
+*   `capacity` (INT, DEFAULT 0): 강좌 수강 정원
+*   `price` (INT, DEFAULT 0): 수강료 (결제 정보 연동을 위한 가격)
 
-## 3. 세부 기능별 구현 전략
+### 2.3. `enrollments` (수강 내역 테이블)
+*   `id` (INT, PK, AUTO_INCREMENT): 수강 내역 고유 번호
+*   `member_id` (INT, FK): 수강을 등록한 회원 참조 (`members` 테이블의 `id` 컬럼과 매핑). 회원이 시스템에서 완전 삭제될 경우 수강 내역만 덩그러니 남는 것을 방지하기 위해 `ON DELETE CASCADE` 설정을 적용하는 것이 바람직합니다.
+*   `lesson_id` (INT, FK): 수강할 강좌 참조 (`lessons` 테이블의 `id` 컬럼과 매핑). 
+    *   **(중요 제약사항):** 명세서 2.3항에 따르면 *"강좌 수정 및 삭제 시 해당 강좌를 수강 중인 회원이 한 명이라도 존재할 경우, 경고 메시지를 표시하고 수정/삭제를 막아야 함"* 이 명시되어 있습니다. 이를 데이터베이스 단에서 확실히 보장하기 위해, 외래 키 옵션에 `ON DELETE RESTRICT`를 부여하여 무결성을 보호해야 합니다.
+*   `start_date` (DATE): 수강 시작 일자
+*   `end_date` (DATE): 수강 종료(만료) 일자
+*   `payment_date` (DATE): 비용을 지불한 결제 일자
 
-### 3.1. 화면 네비게이션 및 전환 (CardLayout)
-- 화면 최상단의 **[뒤로가기]**, **[회원 관리(초기화면)]**, **[회원 등록]**, **[센터 관리]** 버튼 네비게이션 구성을 위해 메인 프레임을 `CardLayout`으로 구성합니다.
-- `CardLayout`은 한 패널 내에 여러 화면 패널을 겹쳐 두고 필요할 때 전환(`CardLayout.show()`)할 수 있도록 지원하므로, '메인 목록 화면' ↔ '회원 상세 정보 페이지' ↔ '센터 관리 페이지' 간의 원활한 이동을 팝업 없이 부드럽게 구현할 수 있습니다.
-- 반면, 회원 등록, 정보 수정, 강좌 등록/수정 등 데이터를 직접 입력받는 작업은 모달 다이얼로그(`JDialog`)로 띄워 사용자의 작업 흐름(Focus)이 분산되지 않게 돕습니다.
-
-### 3.2. 회원 관리 구현 로직 (Member)
-- **Entity & DTO:** `id`, `name`, `phone`, `gender`, `birthDate`, `createdAt`, `notes`
-- **조회 성능:** 검색 기능은 DAO에서 `SELECT * FROM members WHERE name LIKE ? OR phone LIKE ?` 형태로 구현합니다.
-- **UI 렌더링 (만료 회원 강조):** 
-  - `JTable`의 렌더러(`TableCellRenderer`)를 커스텀하여 적용합니다.
-  - 조건식 로직: 회원 정보와 수강 내역을 조인하여 확인. 만료일이 7일 이내이거나 지났으면서 `익월 수강 내역이 존재하지 않는 경우`에만 렌더러가 배경색/글자색을 붉은색으로 변경하도록 Controller에서 로직을 처리합니다.
-
-### 3.3. 수강 관리 구현 로직 (Enrollment)
-- **비즈니스 로직 연산 (기간 자동 설정):** 
-  - 회원 상세 페이지 내에서 수강 등록 버튼 클릭 시, Controller는 해당 회원의 최근 수강 내역을 조회합니다.
-  - `java.time.LocalDate` API를 사용하여 날짜 로직을 분기합니다.
-    - 당월 미등록: `LocalDate.now()` ~ `당월의 마지막 날`
-    - 당월 등록 중: `익월 1일` ~ `익월의 마지막 날`
-  - 계산된 날짜를 DTO에 담아 View(수강 등록 팝업창)에 초기값으로 전달하여 폼을 미리 채워줍니다.
-- **DTO (`EnrollmentDTO`):** `id`, `memberId`, `lessonId`, `startDate`, `endDate`, `paymentDate`
-
-### 3.4. 강좌 관리 구현 로직 (Lesson)
-- **Entity & DTO:** `id`, `name`, `dayOfWeek`, `time`, `instructorName`, `capacity`, `price`
-- **안전 삭제 로직 (유효성 검사):**
-  - 강좌 DAO에서 삭제/수정 메서드를 호출할 때, `SELECT COUNT(*) FROM enrollments WHERE lesson_id = ?` 쿼리를 먼저 실행하여 수강 중인 회원이 있는지 확인합니다.
-  - 결과가 1 이상이면 Controller에 실패 코드를 반환하고, View에서 `JOptionPane.showMessageDialog`를 통해 수강생 존재에 대한 경고를 띄워 수정을 차단합니다.
-- **저장 위치:** 기능 명세서에 명시된 바와 같이 이 모든 강좌 정보는 DB의 `lessons` 테이블에서 무결성 있게 관리됩니다.
-
-### 3.5. 비동기 UI 처리 (EDT 보호)
-- DB I/O 작업은 `javax.swing.SwingWorker`를 상속받은 별도의 백그라운드 작업 클래스에서 `doInBackground()`로 처리합니다.
-- 쿼리 완료 후 `done()` 메서드 내부에서 View의 JTable이나 컴포넌트를 갱신하여 메인 스레드 멈춤 현상을 근본적으로 차단합니다.
-
-## 4. 진행 순서 가이드라인 (Plan)
-1. **DB 설계 및 구축:** Docker MariaDB 컨테이너 실행 및 `members`, `lessons`, `enrollments` 테이블 DDL(Data Definition Language) 스키마 작성 후 적용.
-2. **Model 계층 구현:** 각 도메인별 DTO 및 순수 JDBC 기반 DAO 인터페이스/클래스 구현. (try-with-resources 필수).
-3. **Controller/View 뼈대 구성:** JFrame 메인 창에 CardLayout 적용, 상단 네비게이션 바 구축, JDialog 레이아웃 세팅.
-4. **기능 통합 및 테스트:** 비동기 작업 로직(SwingWorker) 적용 및 각 기능별 CRUD 결합 테스트 진행.
-
-본 문서는 프로젝트의 핵심 뼈대 역할을 하며, 향후 프로세스는 이 문서의 지침을 절대적으로 따릅니다.
+## 3. 추가 설정 사항 (인코딩)
+MariaDB 환경에서 한글 깨짐 이슈를 방지하고 이모지 등의 확장 문자를 안전하게 저장하기 위해 데이터베이스 및 테이블 수준에서 `UTF-8`의 확장형인 `utf8mb4` 캐릭터셋과 `utf8mb4_unicode_ci` 콜레이션(Collation)을 필수적으로 지정해야 합니다.
