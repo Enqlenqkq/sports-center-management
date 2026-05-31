@@ -1,88 +1,164 @@
 # 스포츠센터 회원 관리 프로그램 - 클래스 다이어그램 (Class Diagram)
 
-본 다이어그램은 MVC(Model-View-Controller) 아키텍처 패턴을 기반으로 한 전체 시스템의 주요 클래스 구조와 의존 관계를 나타냅니다.
+기능 명세서의 수강 취소 요구사항과 더불어 결합도를 낮추기 위한 **Java Interface 구조**를 새롭게 적용한 MVC 아키텍처 다이어그램입니다.
 
-## MVC 아키텍처 클래스 다이어그램
+## MVC 아키텍처 클래스 다이어그램 (Interface 분리 적용)
 
 ```mermaid
 classDiagram
-    %% Model (데이터 전달 및 접근)
+    %% Utility
+    class DBConnectionUtil {
+        <<util>>
+        +getConnection() Connection
+    }
+
+    %% Model (DTOs)
     class MemberDTO {
         -int id
         -String name
         -String phone
         -String gender
         -Date birthDate
+        -Timestamp createdAt
+        -String notes
+        +getter()
+        +setter()
+    }
+    class LessonDTO {
+        -int id
+        -String name
+        -String dayOfWeek
+        -String time
+        -String instructorName
+        -int capacity
+        -int price
+        +getter()
+        +setter()
+    }
+    class EnrollmentDTO {
+        -int id
+        -int memberId
+        -int lessonId
         -Date startDate
         -Date endDate
-        -String notes
-        +getId() int
-        +setId(int)
-        +getName() String
-        +setName(String)
-        +getPhone() String
-        +setPhone(String)
+        -Date paymentDate
+        -String lessonName
+        +getter()
+        +setter()
     }
 
-    class MemberDAO {
-        +insertMember(MemberDTO member) boolean
+    %% Model (DAO Interfaces)
+    class IMemberDAO {
+        <<interface>>
+        +insertMember(MemberDTO) boolean
         +getAllMembers() List~MemberDTO~
-        +searchMembers(String keyword) List~MemberDTO~
-        +updateMember(MemberDTO member) boolean
-        +deleteMember(int id) boolean
+        +searchMembers(String) List~MemberDTO~
+        +updateMember(MemberDTO) boolean
+        +deleteMember(int) boolean
+    }
+    class ILessonDAO {
+        <<interface>>
+        +insertLesson(LessonDTO) boolean
+        +getAllLessons() List~LessonDTO~
+        +updateLesson(LessonDTO) boolean
+        +deleteLesson(int) boolean
+    }
+    class IEnrollmentDAO {
+        <<interface>>
+        +insertEnrollment(EnrollmentDTO) boolean
+        +getEnrollmentsByMemberId(int) List~EnrollmentDTO~
+        +deleteEnrollment(int) boolean
     }
 
-    %% Util (공통 유틸리티)
-    class DBConnectionUtil {
-        <<util>>
-        +getConnection() Connection
-        +close(AutoCloseable... resources) void
+    %% Model (DAO Implementations)
+    class MemberDAOImpl {
+        <<implementation>>
+    }
+    class LessonDAOImpl {
+        <<implementation>>
+    }
+    class EnrollmentDAOImpl {
+        <<implementation>>
     }
 
-    %% View (사용자 인터페이스)
+    %% Interface Implementations
+    IMemberDAO <|.. MemberDAOImpl : implements
+    ILessonDAO <|.. LessonDAOImpl : implements
+    IEnrollmentDAO <|.. EnrollmentDAOImpl : implements
+
+    %% View (UI Components)
     class MainFrame {
         -JTable memberTable
-        -JTextField nameField
-        -JTextField phoneField
-        -JButton btnSave
-        -JButton btnUpdate
-        -JButton btnDelete
-        -JButton btnReset
-        +displayMembers(List~MemberDTO~ members)
-        +clearForm()
-        +showErrorMessage(String msg)
-        +showConfirmMessage(String msg) boolean
+        -JTextField searchField
+        +displayMembers(List~MemberDTO~)
+        +refreshTable()
+    }
+    class MemberDetailDialog {
+        -JTable enrollmentTable
+        +displayMemberInfo(MemberDTO)
+        +displayEnrollments(List~EnrollmentDTO~)
+        +addCancelEnrollmentListener(ActionListener)
+    }
+    class MemberFormDialog {
+        +getFormData() MemberDTO
+        +setFormData(MemberDTO)
+    }
+    class LessonManageDialog {
+        -JTable lessonTable
+        +displayLessons(List~LessonDTO~)
+    }
+    class EnrollmentFormDialog {
+        +getFormData() EnrollmentDTO
     }
 
-    %% Controller (중앙 제어 및 이벤트 처리)
-    class MemberController {
-        -MemberDAO dao
+    %% Controller
+    class MainController {
         -MainFrame view
-        +MemberController(MainFrame view, MemberDAO dao)
-        +initController()
-        +loadAllMembers()
-        +handleSaveMember()
-        +handleUpdateMember()
-        +handleDeleteMember()
-        +handleSearchMember(String keyword)
+        -IMemberDAO memberDAO
+        +loadMembers()
+        +searchMembers(String)
+        +openMemberDetail(int)
+    }
+    class MemberController {
+        -IMemberDAO memberDAO
+        +saveMember(MemberDTO)
+        +updateMember(MemberDTO)
+        +deleteMember(int)
+    }
+    class LessonController {
+        -LessonManageDialog view
+        -ILessonDAO lessonDAO
+        +loadLessons()
+        +saveLesson(LessonDTO)
+        +deleteLesson(int)
+    }
+    class EnrollmentController {
+        -MemberDetailDialog view
+        -IEnrollmentDAO enrollmentDAO
+        +loadEnrollments(int)
+        +saveEnrollment(EnrollmentDTO)
+        +cancelEnrollment(int)
     }
 
-    %% 관계 (Relationships)
-    MemberController --> MemberDAO : 데이터 처리 요청 (uses)
-    MemberController --> MainFrame : 화면 갱신 지시 (controls)
-    MainFrame --> MemberController : 사용자 이벤트 전달 (triggers)
-    MemberDAO ..> MemberDTO : 데이터 반환 및 매개변수 사용 (depends)
-    MainFrame ..> MemberDTO : 데이터 바인딩 (depends)
-    MemberDAO --> DBConnectionUtil : DB 연결 획득 및 반환 (uses)
+    %% 의존 관계 (Relationships)
+    MemberDAOImpl --> DBConnectionUtil : uses
+    LessonDAOImpl --> DBConnectionUtil : uses
+    EnrollmentDAOImpl --> DBConnectionUtil : uses
+    
+    MainController --> MainFrame : controls
+    MainController --> IMemberDAO : references (DI)
+    
+    MemberController --> MemberFormDialog : controls
+    MemberController --> IMemberDAO : references (DI)
+    
+    LessonController --> LessonManageDialog : controls
+    LessonController --> ILessonDAO : references (DI)
+    
+    EnrollmentController --> MemberDetailDialog : controls
+    EnrollmentController --> EnrollmentFormDialog : controls
+    EnrollmentController --> IEnrollmentDAO : references (DI)
 ```
 
-### 각 패키지 및 클래스 설명
-* **`com.sportscenter.model` (Model 계층)**
-  * `MemberDTO`: 회원 1명의 정보를 담는 데이터 전송 객체입니다. (로직 없음)
-  * `MemberDAO`: MariaDB와 통신하여 실제 쿼리(`INSERT`, `SELECT`, `UPDATE`, `DELETE`)를 실행하는 데이터 접근 객체입니다.
-* **`com.sportscenter.view` (View 계층)**
-  * `MainFrame`: Java Swing 기반의 데스크톱 화면 UI입니다. 사용자 입력을 받고, 컨트롤러에 이벤트를 전달합니다.
-* **`com.sportscenter.controller` (Controller 계층)**
-  * `MemberController`: View에서 발생한 이벤트를 감지하여 DAO를 호출하고, 그 결과(DTO)를 다시 View로 넘겨주는 중재자 역할을 합니다. (`SwingWorker`를 통한 비동기 처리가 이곳에서 이루어질 수 있습니다.)
-* **`com.sportscenter.util` (Utility 계층)**
-  * `DBConnectionUtil`: DB 연결(Connection)을 가져오고 리소스를 안전하게 닫아주는 유틸리티 클래스입니다.
+### 아키텍처 주요 변경 사항
+* **Java Interface 도입:** `IMemberDAO`, `ILessonDAO`, `IEnrollmentDAO` 인터페이스를 새롭게 정의하여 다형성(Polymorphism)을 활용합니다. Controller 계층은 구체적인 구현체(Impl)가 아닌 추상화된 인터페이스(`IMemberDAO` 등)를 의존(DI)하게 되므로, 향후 DB 변경이나 테스트(Mock 객체 사용)가 매우 쉬워지는 **느슨한 결합(Loose Coupling)** 구조를 달성했습니다.
+* **수강 취소 기능 반영:** `EnrollmentController`에 `cancelEnrollment(int id)` 로직이, `IEnrollmentDAO`에 `deleteEnrollment(int id)`가, `MemberDetailDialog`에 `[수강 취소]` 버튼을 위한 이벤트 리스너 메서드가 추가되었습니다.

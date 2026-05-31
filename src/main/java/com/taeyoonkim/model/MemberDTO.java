@@ -1,6 +1,7 @@
 package com.taeyoonkim.model;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 
 public class MemberDTO {
     private int id;
@@ -8,32 +9,77 @@ public class MemberDTO {
     private String phone;
     private String gender;
     private Date birthDate;
-    private Date startDate;
-    private Date endDate;
+    private Timestamp createdAt;
     private String notes;
 
-    // Getters and Setters
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    // 기본 생성자
+    public MemberDTO() {
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    // 전체 필드 생성자
+    public MemberDTO(int id, String name, String phone, String gender, Date birthDate, Timestamp createdAt, String notes) {
+        this.id = id;
+        this.name = name;
+        this.phone = phone;
+        this.gender = gender;
+        this.birthDate = birthDate;
+        this.createdAt = createdAt;
+        this.notes = notes;
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public int getId() {
+        return id;
+    }
 
-    public String getGender() { return gender; }
-    public void setGender(String gender) { this.gender = gender; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-    public Date getBirthDate() { return birthDate; }
-    public void setBirthDate(Date birthDate) { this.birthDate = birthDate; }
+    public String getName() {
+        return name;
+    }
 
-    public Date getStartDate() { return startDate; }
-    public void setStartDate(Date startDate) { this.startDate = startDate; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public Date getEndDate() { return endDate; }
-    public void setEndDate(Date endDate) { this.endDate = endDate; }
+    public String getPhone() {
+        return phone;
+    }
 
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Date getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(Date birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
 }

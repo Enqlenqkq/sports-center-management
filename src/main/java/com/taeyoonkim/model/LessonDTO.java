@@ -3,23 +3,78 @@ package com.taeyoonkim.model;
 public class LessonDTO {
     private int id;
     private String name;
-    private String instructor;
-    private String schedule;
+    private String dayOfWeek;
+    private String time;
+    private String instructorName;
     private int capacity;
+    private int price;
 
-    // Getters and Setters
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public LessonDTO() {
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public LessonDTO(int id, String name, String dayOfWeek, String time, String instructorName, int capacity, int price) {
+        this.id = id;
+        this.name = name;
+        this.dayOfWeek = dayOfWeek;
+        this.time = time;
+        this.instructorName = instructorName;
+        this.capacity = capacity;
+        this.price = price;
+    }
 
-    public String getInstructor() { return instructor; }
-    public void setInstructor(String instructor) { this.instructor = instructor; }
+    public int getId() {
+        return id;
+    }
 
-    public String getSchedule() { return schedule; }
-    public void setSchedule(String schedule) { this.schedule = schedule; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-    public int getCapacity() { return capacity; }
-    public void setCapacity(int capacity) { this.capacity = capacity; }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDayOfWeek() {
+        return dayOfWeek;
+    }
+
+    public void setDayOfWeek(String dayOfWeek) {
+        this.dayOfWeek = dayOfWeek;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
+
+    public String getInstructorName() {
+        return instructorName;
+    }
+
+    public void setInstructorName(String instructorName) {
+        this.instructorName = instructorName;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public int getPrice() {
+        return price;
+    }
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
 }

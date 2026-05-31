@@ -1,18 +1,25 @@
 package com.taeyoonkim;
 
-import java.sql.*;
-
-import com.taeyoonkim.util.DBConnectionUtil;
+import com.taeyoonkim.controller.MainController;
+import com.taeyoonkim.model.MemberDAOImpl;
+import com.taeyoonkim.view.MainFrame;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 public class Main {
     public static void main(String[] args) {
-        try (Connection conn = DBConnectionUtil.getConnection()) {
-            System.out.println(conn + " --> 연결 성공");
-        } catch (SQLException e) {
-            System.out.println("Error: SQL Exception -> " + e.getMessage());
+        // Look and Feel 설정 (시스템 기본 룩 사용)
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            System.out.println("Error: Class Not Found Exception");
         }
+
+        SwingUtilities.invokeLater(() -> {
+            MainFrame mainFrame = new MainFrame();
+            // 메인 컨트롤러에 메인 프레임과 모델(DAO) 주입
+            new MainController(mainFrame, new MemberDAOImpl());
+            mainFrame.setVisible(true);
+        });
     }
 }
