@@ -65,4 +65,35 @@ public class EnrollmentDAOImpl implements IEnrollmentDAO {
             return false;
         }
     }
+
+    @Override
+    public int getEnrollmentCountByLessonId(int lessonId) {
+        String sql = "SELECT COUNT(*) FROM enrollments WHERE lesson_id = ?";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, lessonId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
+    public boolean isAlreadyEnrolled(int memberId, int lessonId) {
+        String sql = "SELECT COUNT(*) FROM enrollments WHERE member_id = ? AND lesson_id = ?";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, memberId);
+            pstmt.setInt(2, lessonId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

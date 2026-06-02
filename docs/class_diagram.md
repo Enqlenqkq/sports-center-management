@@ -144,21 +144,22 @@ classDiagram
     MemberDAOImpl --> DBConnectionUtil : uses
     LessonDAOImpl --> DBConnectionUtil : uses
     EnrollmentDAOImpl --> DBConnectionUtil : uses
-    
+
     MainController --> MainFrame : controls
     MainController --> IMemberDAO : references (DI)
-    
+
     MemberController --> MemberFormDialog : controls
     MemberController --> IMemberDAO : references (DI)
-    
+
     LessonController --> LessonManageDialog : controls
     LessonController --> ILessonDAO : references (DI)
-    
+
     EnrollmentController --> MemberDetailDialog : controls
     EnrollmentController --> EnrollmentFormDialog : controls
     EnrollmentController --> IEnrollmentDAO : references (DI)
 ```
 
 ### 아키텍처 주요 변경 사항
-* **Java Interface 도입:** `IMemberDAO`, `ILessonDAO`, `IEnrollmentDAO` 인터페이스를 새롭게 정의하여 다형성(Polymorphism)을 활용합니다. Controller 계층은 구체적인 구현체(Impl)가 아닌 추상화된 인터페이스(`IMemberDAO` 등)를 의존(DI)하게 되므로, 향후 DB 변경이나 테스트(Mock 객체 사용)가 매우 쉬워지는 **느슨한 결합(Loose Coupling)** 구조를 달성했습니다.
-* **수강 취소 기능 반영:** `EnrollmentController`에 `cancelEnrollment(int id)` 로직이, `IEnrollmentDAO`에 `deleteEnrollment(int id)`가, `MemberDetailDialog`에 `[수강 취소]` 버튼을 위한 이벤트 리스너 메서드가 추가되었습니다.
+
+- **Java Interface 도입:** `IMemberDAO`, `ILessonDAO`, `IEnrollmentDAO` 인터페이스를 새롭게 정의하여 다형성(Polymorphism)을 활용합니다. Controller 계층은 구체적인 구현체(Impl)가 아닌 추상화된 인터페이스(`IMemberDAO` 등)를 의존(DI)하게 되므로, 향후 DB 변경이나 테스트(Mock 객체 사용)가 매우 쉬워지는 **느슨한 결합(Loose Coupling)** 구조를 달성했습니다.
+- **수강 취소 기능 반영:** `EnrollmentController`에 `cancelEnrollment(int id)` 로직이, `IEnrollmentDAO`에 `deleteEnrollment(int id)`가, `MemberDetailDialog`에 `[수강 취소]` 버튼을 위한 이벤트 리스너 메서드가 추가되었습니다.

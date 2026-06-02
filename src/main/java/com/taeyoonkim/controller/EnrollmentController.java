@@ -48,12 +48,39 @@ public class EnrollmentController {
             }
         });
         
+        view.addSaveNotesListener(e -> {
+            MemberDTO m = view.getMember();
+            m.setNotes(view.getNotesText());
+            if (memberDAO.updateMember(m)) {
+                JOptionPane.showMessageDialog(view, "메모가 성공적으로 저장되었습니다.", "저장 완료", JOptionPane.INFORMATION_MESSAGE);
+                mainController.loadMembers(); // 메인 리스트 갱신
+            } else {
+                JOptionPane.showMessageDialog(view, "메모 저장에 실패했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
         view.addAddEnrollmentListener(e -> {
             List<LessonDTO> lessons = lessonDAO.getAllLessons();
             EnrollmentFormDialog dialog = new EnrollmentFormDialog(view, view.getMember().getId(), lessons);
             dialog.addSaveListener(event -> {
                 EnrollmentDTO dto = dialog.getFormData();
                 if (dto != null) {
+                    // 중복 수강 검사
+                    if (enrollmentDAO.isAlreadyEnrolled(dto.getMemberId(), dto.getLessonId())) {
+                        JOptionPane.showMessageDialog(dialog, "이미 수강 중인 강좌입니다.", "경고", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    
+                    // 정원 초과 검사
+                    LessonDTO selectedLesson = lessons.stream().filter(l -> l.getId() == dto.getLessonId()).findFirst().orElse(null);
+                    if (selectedLesson != null) {
+                        int currentCount = enrollmentDAO.getEnrollmentCountByLessonId(dto.getLessonId());
+                        if (currentCount >= selectedLesson.getCapacity()) {
+                            JOptionPane.showMessageDialog(dialog, "강좌 정원이 초과되어 수강할 수 없습니다.", "경고", JOptionPane.WARNING_MESSAGE);
+                            return;
+                        }
+                    }
+
                     if (enrollmentDAO.insertEnrollment(dto)) {
                         JOptionPane.showMessageDialog(dialog, "수강 등록 완료");
                         dialog.dispose();
