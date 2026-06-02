@@ -48,3 +48,6 @@ buildNumber.properties
 # Gradle
 .gradle/
 build/
+
+# Environment Variables
+.env
