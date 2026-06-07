@@ -1,15 +1,19 @@
 # 스포츠센터 회원 관리 프로그램 - 클래스 다이어그램 (Class Diagram)
 
-기능 명세서의 수강 취소 요구사항과 더불어 결합도를 낮추기 위한 **Java Interface 구조**를 새롭게 적용한 MVC 아키텍처 다이어그램입니다.
+현재 코드베이스에 완벽하게 일치하도록 상세화된 MVC 아키텍처 다이어그램입니다. 각 계층간의 의존성, 인터페이스 분리, 그리고 구체적인 필드 및 메서드 관계를 명확히 나타냅니다.
 
-## MVC 아키텍처 클래스 다이어그램 (Interface 분리 적용)
+## MVC 아키텍처 다이어그램
 
 ```mermaid
 classDiagram
     %% Utility
     class DBConnectionUtil {
         <<util>>
-        +getConnection() Connection
+        -Dotenv dotenv$
+        -String URL$
+        -String USER$
+        -String PASSWORD$
+        +getConnection()$ Connection
     }
 
     %% Model (DTOs)
@@ -68,6 +72,8 @@ classDiagram
         +insertEnrollment(EnrollmentDTO) boolean
         +getEnrollmentsByMemberId(int) List~EnrollmentDTO~
         +deleteEnrollment(int) boolean
+        +getEnrollmentCountByLessonId(int) int
+        +isAlreadyEnrolled(int, int) boolean
     }
 
     %% Model (DAO Implementations)
@@ -81,85 +87,107 @@ classDiagram
         <<implementation>>
     }
 
-    %% Interface Implementations
-    IMemberDAO <|.. MemberDAOImpl : implements
-    ILessonDAO <|.. LessonDAOImpl : implements
-    IEnrollmentDAO <|.. EnrollmentDAOImpl : implements
+    IMemberDAO <|.. MemberDAOImpl
+    ILessonDAO <|.. LessonDAOImpl
+    IEnrollmentDAO <|.. EnrollmentDAOImpl
 
     %% View (UI Components)
     class MainFrame {
         -JTable memberTable
+        -JTable lessonTable
         -JTextField searchField
         +displayMembers(List~MemberDTO~)
-        +refreshTable()
+        +displayLessons(List~LessonDTO~)
+        +addSearchListener()
+        +addAddMemberListener()
     }
     class MemberDetailDialog {
         -JTable enrollmentTable
         +displayMemberInfo(MemberDTO)
         +displayEnrollments(List~EnrollmentDTO~)
-        +addCancelEnrollmentListener(ActionListener)
     }
     class MemberFormDialog {
         +getFormData() MemberDTO
         +setFormData(MemberDTO)
     }
     class LessonManageDialog {
-        -JTable lessonTable
-        +displayLessons(List~LessonDTO~)
+        +getFormData() LessonDTO
+        +setFormData(LessonDTO)
     }
     class EnrollmentFormDialog {
         +getFormData() EnrollmentDTO
     }
 
     %% Controller
+    class Main {
+        +main(String[])$
+    }
     class MainController {
         -MainFrame view
         -IMemberDAO memberDAO
+        -ILessonDAO lessonDAO
         +loadMembers()
+        +loadLessons()
         +searchMembers(String)
-        +openMemberDetail(int)
+        -openMemberDetail()
+        -openLessonEdit()
     }
     class MemberController {
+        -MemberFormDialog view
         -IMemberDAO memberDAO
-        +saveMember(MemberDTO)
-        +updateMember(MemberDTO)
-        +deleteMember(int)
+        -MainController mainController
+        -saveMember()
+        -deleteMember()
     }
     class LessonController {
         -LessonManageDialog view
         -ILessonDAO lessonDAO
-        +loadLessons()
-        +saveLesson(LessonDTO)
-        +deleteLesson(int)
+        -MainController mainController
+        -saveLesson()
+        -deleteLesson()
     }
     class EnrollmentController {
         -MemberDetailDialog view
         -IEnrollmentDAO enrollmentDAO
+        -ILessonDAO lessonDAO
+        -IMemberDAO memberDAO
+        -MainController mainController
         +loadEnrollments(int)
-        +saveEnrollment(EnrollmentDTO)
-        +cancelEnrollment(int)
+        -openEnrollmentForm()
+        -cancelEnrollment()
     }
 
-    %% 의존 관계 (Relationships)
-    MemberDAOImpl --> DBConnectionUtil : uses
-    LessonDAOImpl --> DBConnectionUtil : uses
-    EnrollmentDAOImpl --> DBConnectionUtil : uses
+    %% Relationships
+    Main --> MainFrame : creates
+    Main --> MainController : creates
+    Main --> MemberDAOImpl : creates
+    Main --> LessonDAOImpl : creates
 
-    MainController --> MainFrame : controls
-    MainController --> IMemberDAO : references (DI)
+    MemberDAOImpl ..> DBConnectionUtil : uses
+    LessonDAOImpl ..> DBConnectionUtil : uses
+    EnrollmentDAOImpl ..> DBConnectionUtil : uses
 
-    MemberController --> MemberFormDialog : controls
-    MemberController --> IMemberDAO : references (DI)
+    MainController o-- MainFrame
+    MainController o-- IMemberDAO
+    MainController o-- ILessonDAO
 
-    LessonController --> LessonManageDialog : controls
-    LessonController --> ILessonDAO : references (DI)
+    MemberController o-- MemberFormDialog
+    MemberController o-- IMemberDAO
+    MemberController --> MainController : triggers loadMembers()
 
-    EnrollmentController --> MemberDetailDialog : controls
-    EnrollmentController --> EnrollmentFormDialog : controls
-    EnrollmentController --> IEnrollmentDAO : references (DI)
+    LessonController o-- LessonManageDialog
+    LessonController o-- ILessonDAO
+    LessonController --> MainController : triggers loadLessons()
+
+    EnrollmentController o-- MemberDetailDialog
+    EnrollmentController o-- IEnrollmentDAO
+    EnrollmentController o-- ILessonDAO
+    EnrollmentController o-- IMemberDAO
+    EnrollmentController --> MainController : triggers loadMembers()
 ```
 
-### 아키텍처 주요 변경 사항
-
-- **Java Interface 도입:** `IMemberDAO`, `ILessonDAO`, `IEnrollmentDAO` 인터페이스를 새롭게 정의하여 다형성(Polymorphism)을 활용합니다. Controller 계층은 구체적인 구현체(Impl)가 아닌 추상화된 인터페이스(`IMemberDAO` 등)를 의존(DI)하게 되므로, 향후 DB 변경이나 테스트(Mock 객체 사용)가 매우 쉬워지는 **느슨한 결합(Loose Coupling)** 구조를 달성했습니다.
-- **수강 취소 기능 반영:** `EnrollmentController`에 `cancelEnrollment(int id)` 로직이, `IEnrollmentDAO`에 `deleteEnrollment(int id)`가, `MemberDetailDialog`에 `[수강 취소]` 버튼을 위한 이벤트 리스너 메서드가 추가되었습니다.
+### 아키텍처 및 의존성 특징
+1. **의존성 주입 (Dependency Injection)**: 각 컨트롤러는 생성자를 통해 View와 연관된 DAO 모델을 주입받아 사용합니다.
+2. **다형성 보장**: `IMemberDAO`, `ILessonDAO`, `IEnrollmentDAO` 등 인터페이스를 통한 접근으로 추후 DB 교체 등에 유연하게 대처할 수 있습니다.
+3. **Controller 간의 통신**: `MemberController`, `LessonController`, `EnrollmentController` 작업 완료 후 테이블 목록 최신화를 위해 상위인 `MainController`의 메서드를 호출(콜백과 유사한 방식)하여 View를 갱신합니다.
+4. **비동기 뷰 리렌더링**: 각 Controller에서는 모델로부터 데이터를 가져올 때 `SwingWorker`를 사용하여 UI 블로킹을 방지합니다.

@@ -5,16 +5,12 @@ import com.taeyoonkim.model.MemberDAOImpl;
 import com.taeyoonkim.model.LessonDAOImpl;
 import com.taeyoonkim.view.MainFrame;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
+import com.formdev.flatlaf.*;
 
 public class Main {
     public static void main(String[] args) {
-        // Look and Feel 설정 (시스템 기본 룩 사용)
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        FlatLightLaf.setup();
+        
 
         SwingUtilities.invokeLater(() -> {
             MainFrame mainFrame = new MainFrame();

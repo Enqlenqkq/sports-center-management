@@ -22,15 +22,6 @@ public class MainController {
     }
 
     private void initController() {
-        // 네비게이션 버튼 (CardLayout 전환)
-        view.addNavMemberListener(e -> {
-            view.showMemberPanel();
-            loadMembers();
-        });
-        view.addNavLessonListener(e -> {
-            view.showLessonPanel();
-            loadLessons();
-        });
 
         // 1. 회원 관리 이벤트
         view.addSearchListener(e -> searchMembers(view.getSearchKeyword()));
